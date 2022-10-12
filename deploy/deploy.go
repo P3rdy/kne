@@ -823,9 +823,9 @@ func (i *IxiaTGSpec) Deploy(ctx context.Context) error {
 		return err
 	}
 	if i.ConfigMap == nil {
-		path := filepath.Join(i.ManifestDir, "ixia-configmap.yaml")
+		path := filepath.Join(i.ManifestDir, "ixiatg-version.yaml")
 		if _, err := osStat(path); err != nil {
-			log.Warnf("ixia controller deployed without configmap, before creating a topology with ixia-c be sure to create a configmap following https://github.com/open-traffic-generator/ixia-c-operator#ixia-c-operator and apply it using 'kubectl apply -f ixia-configmap.yaml'")
+			log.Warnf("ixia controller deployed without configmap, before creating a topology with ixia-c be sure to create a configmap following https://github.com/open-traffic-generator/ixia-c-operator#ixia-c-operator and apply it using 'kubectl apply -f ixiatg-version.yaml'")
 			return nil
 		}
 		log.Infof("Deploying IxiaTG configmap from: %s", path)
@@ -840,7 +840,7 @@ func (i *IxiaTGSpec) Deploy(ctx context.Context) error {
 		return err
 	}
 	b = append([]byte(ixiaTGConfigMapHeader), b...)
-	f, err := os.CreateTemp("", "ixiatg-configmap-*.yaml")
+	f, err := os.CreateTemp("", "ixiatg-version-*.yaml")
 	if err != nil {
 		return err
 	}
