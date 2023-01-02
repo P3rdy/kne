@@ -44,6 +44,7 @@ import (
 	_ "github.com/openconfig/kne/topo/node/ceos"
 	_ "github.com/openconfig/kne/topo/node/cisco"
 	_ "github.com/openconfig/kne/topo/node/cptx"
+	_ "github.com/openconfig/kne/topo/node/frr"
 	_ "github.com/openconfig/kne/topo/node/gobgp"
 	_ "github.com/openconfig/kne/topo/node/host"
 	_ "github.com/openconfig/kne/topo/node/ixia"

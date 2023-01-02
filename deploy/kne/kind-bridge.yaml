@@ -21,12 +21,12 @@ cni:
   spec:
     manifests: ../../manifests/meshnet/vxlan
 controllers:
-  - kind: IxiaTG
-    spec:
-      manifests: ../../manifests/controllers/ixiatg
-  - kind: SRLinux
-    spec:
-      manifests: ../../manifests/controllers/srlinux
-  - kind: CEOSLab
-    spec:
-      manifests: ../../manifests/controllers/ceoslab
+  # - kind: IxiaTG
+  #   spec:
+  #     manifests: ../../manifests/controllers/ixiatg
+  # - kind: SRLinux
+  #   spec:
+  #     manifests: ../../manifests/controllers/srlinux
+  # - kind: CEOSLab
+  #   spec:
+  #     manifests: ../../manifests/controllers/ceoslab

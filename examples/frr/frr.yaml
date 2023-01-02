@@ -1,0 +1,19 @@
+name: frr
+links:
+- a_int: eth1
+  a_node: r1
+  z_int: eth1
+  z_node: r2
+nodes:
+- config:
+    file: r1.sh
+  name: r1
+  vendor: FRR
+- config:
+    file: r2.sh
+    command: 
+    - /bin/sh
+    args:
+    - init.sh
+  name: r2
+  vendor: FRR
