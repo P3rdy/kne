@@ -135,6 +135,7 @@ message Config {
   string init_image = 10;
   // Vendor-specific data
   google.protobuf.Any vendor_data = 11;
+  repeated string extra_commands = 12; 
 }
 
 message CertificateCfg {

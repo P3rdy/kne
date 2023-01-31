@@ -34,8 +34,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/remotecommand"
 
 	topologyclientv1 "github.com/openconfig/kne/api/clientset/v1beta1"
 	topologyv1 "github.com/openconfig/kne/api/types/v1beta1"
@@ -444,10 +446,12 @@ func (m *Manager) checkNodeStatus(ctx context.Context, timeout time.Duration) er
 
 			phase, err := n.Status(ctx)
 			if err != nil || phase == node.StatusFailed {
-				return fmt.Errorf("Node %q: Status %s Reason %v", name, phase, err)
+				return fmt.Errorf("node %q: status %s reason %v", name, phase, err)
 			}
 			if phase == node.StatusRunning {
 				log.Infof("Node %q: Status %s", name, phase)
+				extcmds := n.GetProto().Config.ExtraCommands
+				m.Exec(ctx, extcmds, name, nil, os.Stdout, os.Stderr)
 				processed[name] = true
 			} else {
 				foundAll = false
@@ -457,6 +461,44 @@ func (m *Manager) checkNodeStatus(ctx context.Context, timeout time.Duration) er
 	}
 	if !foundAll {
 		log.Warnf("Failed to determine status of some node resources in %d sec", timeout)
+	}
+	return nil
+}
+
+func (m *Manager) Exec(ctx context.Context, cmds []string, name string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+	for _, command := range cmds {
+		cmd := []string{
+			"/bin/bash",
+			"-c",
+			command,
+		}
+		req := m.kClient.CoreV1().RESTClient().Post().
+			Resource("pods").
+			Name(name).
+			Namespace(m.topo.Name).
+			SubResource("exec")
+		req.VersionedParams(&corev1.PodExecOptions{
+			Stdout:    true,
+			Stderr:    true,
+			Container: name,
+			Command:   cmd,
+			TTY:       true,
+		}, scheme.ParameterCodec)
+		log.Infof("Executing extra commands on node %s", name)
+		exec, err := remotecommand.NewSPDYExecutor(m.rCfg, "POST", req.URL())
+		if err != nil {
+			log.Errorf("error in creating executor for extra commands of node %s : %s", name, err.Error())
+			return err
+		}
+		err = exec.Stream(remotecommand.StreamOptions{
+			Stdin:  stdin,
+			Stdout: stdout,
+			Stderr: stderr,
+		})
+		if err != nil {
+			log.Errorf("error in executing extra commands of node %s : %s", name, err.Error())
+			return err
+		}
 	}
 	return nil
 }
