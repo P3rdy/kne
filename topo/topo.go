@@ -450,8 +450,10 @@ func (m *Manager) checkNodeStatus(ctx context.Context, timeout time.Duration) er
 			}
 			if phase == node.StatusRunning {
 				log.Infof("Node %q: Status %s", name, phase)
-				extcmds := n.GetProto().Config.ExtraCommands
-				m.Exec(ctx, extcmds, name, nil, os.Stdout, os.Stderr)
+				tasks := n.GetProto().Config.Tasks
+				for _, task := range tasks {
+					m.Exec(ctx, task.Cmds, name, task.Container, nil, os.Stdout, os.Stderr)
+				}
 				processed[name] = true
 			} else {
 				foundAll = false
@@ -465,7 +467,7 @@ func (m *Manager) checkNodeStatus(ctx context.Context, timeout time.Duration) er
 	return nil
 }
 
-func (m *Manager) Exec(ctx context.Context, cmds []string, name string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
+func (m *Manager) Exec(ctx context.Context, cmds []string, podname string, name string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	for _, command := range cmds {
 		cmd := []string{
 			"/bin/bash",
@@ -474,7 +476,7 @@ func (m *Manager) Exec(ctx context.Context, cmds []string, name string, stdin io
 		}
 		req := m.kClient.CoreV1().RESTClient().Post().
 			Resource("pods").
-			Name(name).
+			Name(podname).
 			Namespace(m.topo.Name).
 			SubResource("exec")
 		req.VersionedParams(&corev1.PodExecOptions{
@@ -484,10 +486,10 @@ func (m *Manager) Exec(ctx context.Context, cmds []string, name string, stdin io
 			Command:   cmd,
 			TTY:       true,
 		}, scheme.ParameterCodec)
-		log.Infof("Executing extra commands on node %s", name)
+		log.Infof("Executing extra commands on container %s", name)
 		exec, err := remotecommand.NewSPDYExecutor(m.rCfg, "POST", req.URL())
 		if err != nil {
-			log.Errorf("error in creating executor for extra commands of node %s : %s", name, err.Error())
+			log.Errorf("error in creating executor for extra commands of container %s : %s", name, err.Error())
 			return err
 		}
 		err = exec.Stream(remotecommand.StreamOptions{

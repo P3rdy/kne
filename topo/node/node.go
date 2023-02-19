@@ -252,6 +252,33 @@ func (n *Impl) CreatePod(ctx context.Context) error {
 	if initContainerImage == "" {
 		initContainerImage = DefaultInitContainerImage
 	}
+	containers := make([]corev1.Container, 1, 32)
+	containers[0] = corev1.Container{
+		Name:            pb.Name,
+		Image:           pb.Config.Image,
+		Command:         pb.Config.Command,
+		Args:            pb.Config.Args,
+		Env:             ToEnvVar(pb.Config.Env),
+		Resources:       ToResourceRequirements(pb.Constraints),
+		ImagePullPolicy: "IfNotPresent",
+		SecurityContext: &corev1.SecurityContext{
+			Privileged: pointer.Bool(true),
+		},
+	}
+	for containerName, image := range pb.Config.ExtraImages {
+		containers = append(containers, corev1.Container{
+			Name:            containerName,
+			Image:           image,
+			Command:         []string{},
+			Args:            []string{},
+			Env:             ToEnvVar(pb.Config.Env),
+			Resources:       ToResourceRequirements(pb.Constraints),
+			ImagePullPolicy: "IfNotPresent",
+			SecurityContext: &corev1.SecurityContext{
+				Privileged: pointer.Bool(true),
+			},
+		})
+	}
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pb.Name,
@@ -270,20 +297,10 @@ func (n *Impl) CreatePod(ctx context.Context) error {
 				},
 				ImagePullPolicy: "IfNotPresent",
 			}},
-			Containers: []corev1.Container{{
-				Name:            pb.Name,
-				Image:           pb.Config.Image,
-				Command:         pb.Config.Command,
-				Args:            pb.Config.Args,
-				Env:             ToEnvVar(pb.Config.Env),
-				Resources:       ToResourceRequirements(pb.Constraints),
-				ImagePullPolicy: "IfNotPresent",
-				SecurityContext: &corev1.SecurityContext{
-					Privileged: pointer.Bool(true),
-				},
-			}},
+			Containers:                    containers,
 			TerminationGracePeriodSeconds: pointer.Int64(0),
 			NodeSelector:                  map[string]string{},
+			// ShareProcessNamespace:         pointer.Bool(true),
 			Affinity: &corev1.Affinity{
 				PodAntiAffinity: &corev1.PodAntiAffinity{
 					PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{{
@@ -314,12 +331,22 @@ func (n *Impl) CreatePod(ctx context.Context) error {
 				},
 			},
 		})
+		pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+			Name: "zebra-volume",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+			Name:      "startup-config-volume",
+			MountPath: pb.Config.ConfigPath + "/" + pb.Config.ConfigFile,
+			SubPath:   pb.Config.ConfigFile,
+			ReadOnly:  true,
+		})
 		for i, c := range pod.Spec.Containers {
 			pod.Spec.Containers[i].VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
-				Name:      "startup-config-volume",
-				MountPath: pb.Config.ConfigPath + "/" + pb.Config.ConfigFile,
-				SubPath:   pb.Config.ConfigFile,
-				ReadOnly:  true,
+				Name:      "zebra-volume",
+				MountPath: "/var/run/frr",
 			})
 		}
 	}

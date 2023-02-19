@@ -43,10 +43,11 @@ func defaults(pb *tpb.Node) *tpb.Node {
 		pb.Config = &tpb.Config{}
 	}
 	if pb.Config.Image == "" {
-		pb.Config.Image = "hfam/gobgp:latest"
+		pb.Config.Image = "jauderho/gobgp:latest"
 	}
 	if len(pb.GetConfig().GetCommand()) == 0 {
-		pb.Config.Command = []string{"/usr/local/bin/gobgpd", "-f", "/gobgp.conf", "-t", "yaml"}
+		pb.Config.Command = []string{"/bin/sh", "-c", "sleep 2000000000000"}
+		// pb.Config.Command = []string{"/usr/local/bin/gobgpd", "-f", "/gobgp.conf", "-t", "yaml"}
 	}
 	if pb.Config.EntryCommand == "" {
 		pb.Config.EntryCommand = fmt.Sprintf("kubectl exec -it %s -- /bin/bash", pb.Name)

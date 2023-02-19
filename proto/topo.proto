@@ -135,9 +135,14 @@ message Config {
   string init_image = 10;
   // Vendor-specific data
   google.protobuf.Any vendor_data = 11;
-  repeated string extra_commands = 12; 
+  repeated Task tasks = 12; 
+  map<string, string> extra_images = 13;
 }
 
+message Task {
+  string container = 1;
+  repeated string cmds = 2; 
+}
 message CertificateCfg {
   oneof config {
     // self_signed will generate local certificates on the node.
