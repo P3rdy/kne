@@ -318,6 +318,7 @@ func (n *Impl) CreatePod(ctx context.Context) error {
 					}},
 				},
 			},
+			// HostAliases: []corev1.HostAlias{{IP: "127.0.0.1", Hostnames: []string{"krill"}}},
 		},
 	}
 	if pb.Config.ConfigData != nil {
@@ -331,23 +332,40 @@ func (n *Impl) CreatePod(ctx context.Context) error {
 				},
 			},
 		})
-		pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
-			Name: "zebra-volume",
-			VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{},
-			},
-		})
+		// pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+		// 	Name: "zebra-volume",
+		// 	VolumeSource: corev1.VolumeSource{
+		// 		EmptyDir: &corev1.EmptyDirVolumeSource{},
+		// 	},
+		// })
 		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
 			Name:      "startup-config-volume",
 			MountPath: pb.Config.ConfigPath + "/" + pb.Config.ConfigFile,
 			SubPath:   pb.Config.ConfigFile,
 			ReadOnly:  true,
 		})
-		for i, c := range pod.Spec.Containers {
-			pod.Spec.Containers[i].VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
-				Name:      "zebra-volume",
-				MountPath: "/var/run/frr",
-			})
+	}
+	shareVolumes := pb.Config.ShareVolumes
+	for _, sv := range shareVolumes {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+			Name: fmt.Sprintf("volume-%s", sv),
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
+	}
+	for i, c := range pod.Spec.Containers {
+		// pod.Spec.Containers[i].VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
+		// 	Name:      "zebra-volume",
+		// 	MountPath: "/var/run/frr",
+		// })
+		if configs, ok := pb.Config.ContainerVolumes[c.Name]; ok {
+			for j, sv := range configs.Volumes {
+				pod.Spec.Containers[i].VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
+					Name:      fmt.Sprintf("volume-%s", sv),
+					MountPath: configs.Paths[j],
+				})
+			}
 		}
 	}
 	sPod, err := n.KubeClient.CoreV1().Pods(n.Namespace).Create(ctx, pod, metav1.CreateOptions{})

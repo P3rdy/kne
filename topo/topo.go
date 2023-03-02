@@ -470,7 +470,7 @@ func (m *Manager) checkNodeStatus(ctx context.Context, timeout time.Duration) er
 func (m *Manager) Exec(ctx context.Context, cmds []string, podname string, name string, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	for _, command := range cmds {
 		cmd := []string{
-			"/bin/bash",
+			"/bin/sh",
 			"-c",
 			command,
 		}
@@ -480,13 +480,14 @@ func (m *Manager) Exec(ctx context.Context, cmds []string, podname string, name 
 			Namespace(m.topo.Name).
 			SubResource("exec")
 		req.VersionedParams(&corev1.PodExecOptions{
+			Stdin:     false,
 			Stdout:    true,
 			Stderr:    true,
 			Container: name,
 			Command:   cmd,
-			TTY:       true,
+			TTY:       false,
 		}, scheme.ParameterCodec)
-		log.Infof("Executing extra commands on container %s", name)
+		log.Infof("Executing extra commands on container %s: %s", name, command)
 		exec, err := remotecommand.NewSPDYExecutor(m.rCfg, "POST", req.URL())
 		if err != nil {
 			log.Errorf("error in creating executor for extra commands of container %s : %s", name, err.Error())
@@ -496,6 +497,7 @@ func (m *Manager) Exec(ctx context.Context, cmds []string, podname string, name 
 			Stdin:  stdin,
 			Stdout: stdout,
 			Stderr: stderr,
+			Tty:    false,
 		})
 		if err != nil {
 			log.Errorf("error in executing extra commands of node %s : %s", name, err.Error())

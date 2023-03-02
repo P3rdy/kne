@@ -137,8 +137,14 @@ message Config {
   google.protobuf.Any vendor_data = 11;
   repeated Task tasks = 12; 
   map<string, string> extra_images = 13;
+  repeated string share_volumes= 14;
+  map<string,PublicVolumes> container_volumes = 15;
 }
 
+message PublicVolumes {
+  repeated string volumes = 1;
+  repeated string paths = 2;
+}
 message Task {
   string container = 1;
   repeated string cmds = 2; 
