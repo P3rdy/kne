@@ -36,7 +36,7 @@ var (
 	timeout  time.Duration
 	logLevel = "info"
 
-	rootCmd = &cobra.Command{
+	RootCmd = &cobra.Command{
 		Use:   "kne",
 		Short: "Kubernetes Network Emulation CLI",
 		Long: `Kubernetes Network Emulation CLI.  Works with meshnet to create
@@ -58,7 +58,7 @@ func rootFn(cmd *cobra.Command, args []string) error {
 
 // ExecuteContext executes the root command.
 func ExecuteContext(ctx context.Context) error {
-	return rootCmd.ExecuteContext(ctx)
+	return RootCmd.ExecuteContext(ctx)
 }
 
 func defaultKubeCfg() string {
@@ -72,16 +72,16 @@ func defaultKubeCfg() string {
 }
 
 func init() {
-	rootCmd.SetOut(os.Stdout)
-	rootCmd.PersistentFlags().StringVar(&kubecfg, "kubecfg", defaultKubeCfg(), "kubeconfig file")
-	rootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "v", logLevel, "log level")
+	RootCmd.SetOut(os.Stdout)
+	RootCmd.PersistentFlags().StringVar(&kubecfg, "kubecfg", defaultKubeCfg(), "kubeconfig file")
+	RootCmd.PersistentFlags().StringVarP(&logLevel, "verbosity", "v", logLevel, "log level")
 	createCmd.Flags().BoolVar(&dryrun, "dryrun", false, "Generate topology but do not push to k8s")
 	createCmd.Flags().DurationVar(&timeout, "timeout", 0, "Timeout for pod status enquiry")
-	rootCmd.AddCommand(createCmd)
-	rootCmd.AddCommand(deleteCmd)
-	rootCmd.AddCommand(showCmd)
-	rootCmd.AddCommand(topology.New())
-	rootCmd.AddCommand(deploy.New())
+	RootCmd.AddCommand(createCmd)
+	RootCmd.AddCommand(deleteCmd)
+	RootCmd.AddCommand(showCmd)
+	RootCmd.AddCommand(topology.New())
+	RootCmd.AddCommand(deploy.New())
 }
 
 var (
