@@ -2,6 +2,7 @@
 .idea
 
 /kne
+/kne_back
 /go.work
 /go.work.sum
 **/super-linter.log
